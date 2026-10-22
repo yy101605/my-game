@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>依恋类型深度测试</title>
+<style>
+:root{
+  --bg:#0b0b0d;
+  --fg:#c3bfb8;
+  --dim:#6d6a66;
+  --red:#c1121f;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"Songti SC","STSong","SimSun",Georgia,serif;
+  min-height:100%;
+}
+body{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  padding:50px 22px;
+  overflow-x:hidden;
+  transition:background .6s;
+}
+body.endmode{background:#0a0000;}
+
+#stage{
+  width:100%;max-width:620px;
+  position:relative;
+}
+#stage.shake{animation:shakeKf .5s linear;}
+
+@keyframes shakeKf{
+  0%,100%{transform:translate(0,0) rotate(0);}
+  10%{transform:translate(-8px,4px) rotate(-.4deg);}
+  20%{transform:translate(7px,-5px) rotate(.5deg);}
+  30%{transform:translate(-6px,-6px) rotate(-.3deg);}
+  40%{transform:translate(8px,5px) rotate(.4deg);}
+  50%{transform:translate(-5px,3px) rotate(-.5deg);}
+  60%{transform:translate(6px,-4px) rotate(.3deg);}
+  70%{transform:translate(-4px,-3px) rotate(-.2deg);}
+  80%{transform:translate(5px,4px) rotate(.3deg);}
+  90%{transform:translate(-3px,2px) rotate(-.2deg);}
+}
+
+.screen{animation:fadein .6s ease;}
+.hidden{display:none !important;}
+@keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ---------- 开始页 ---------- */
+.brand{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11px;letter-spacing:3px;color:var(--dim);
+  margin-bottom:30px;
+}
+h1{
+  font-size:30px;font-weight:400;letter-spacing:2px;
+  margin:0 0 14px;color:#ddd9d2;
+}
+.sub{color:var(--dim);font-size:13px;letter-spacing:1px;margin:0 0 38px;}
+.desc{line-height:2.1;font-size:15px;color:#a8a49e;margin-bottom:44px;}
+#start-btn{
+  background:transparent;border:1px solid #3a3a3f;color:#d8d4ce;
+  padding:15px 46px;font-size:15px;letter-spacing:4px;
+  font-family:inherit;cursor:pointer;transition:.35s;
+}
+#start-btn:hover{
+  border-color:#7a7a80;background:rgba(255,255,255,.03);letter-spacing:7px;
+}
+.tiny{font-size:12px;color:#4a4744;margin-top:30px;letter-spacing:1px;}
+
+/* ---------- 答题页 ---------- */
+.topbar{display:flex;align-items:center;gap:16px;margin-bottom:46px;}
+#progress-wrap{flex:1;height:2px;background:#1c1c20;overflow:hidden;}
+#progress-bar{height:100%;width:0;background:#5a5a60;transition:width .55s ease;}
+#counter{
+  font-family:ui-monospace,Menlo,monospace;
+  font-size:11px;color:var(--dim);letter-spacing:2px;
+  transition:color .3s;
+}
+#question{
+  font-size:20px;line-height:1.95;margin-bottom:40px;
+  color:#d5d1ca;letter-spacing:.5px;min-height:70px;
+  transition:color .3s,text-shadow .3s;
+}
+#options{display:flex;flex-direction:column;gap:10px;}
+
+.opt{
+  background:transparent;border:1px solid #242428;color:#9d9993;
+  padding:15px 20px;font-family:inherit;font-size:15px;letter-spacing:.5px;
+  text-align:left;cursor:pointer;transition:.25s;position:relative;
+  line-height:1.5;
+}
+.opt:hover{border-color:#55555c;color:#e6e2dc;background:rgba(255,255,255,.015);}
+.opt:active{transform:scale(.995);}
+
+/* 全局变红 */
+body.red #question{color:#c1121f;text-shadow:0 0 24px rgba(193,18,31,.6);}
+body.red #counter{color:#c1121f;}
+body.red .opt{border-color:#3a0d10;color:#8a2a2f;}
+
+/* 幽灵提示 */
+.ghost-note{
+  position:fixed;left:50%;bottom:11%;
+  transform:translate(-50%,10px);
+  color:#8c1216;font-size:15px;letter-spacing:3px;
+  opacity:0;transition:opacity .9s,transform .9s;
+  pointer-events:none;
+  text-shadow:0 0 22px rgba(150,0,0,.7);
+  z-index:8000;white-space:nowrap;
+}
+.ghost-note.show{opacity:1;transform:translate(-50%,0);}
+
+/* 满屏红字 */
+#flood{
+  position:fixed;inset:0;z-index:9500;
+  background:#040404;color:#b60d18;
+  font-family:"Songti SC","STSong",serif;
+  font-size:21px;line-height:1.35;
+  padding:0;overflow:hidden;word-break:break-all;
+  opacity:0;transition:opacity .12s linear;
+  pointer-events:none;
+  text-shadow:0 0 10px rgba(180,0,0,.5);
+}
+/* 闪光 */
+#flash{
+  position:fixed;inset:0;z-index:9800;background:#fff;
+  opacity:0;pointer-events:none;
+  transition:opacity .13s ease-out;
+}
+
+/* ---------- 结局 ---------- */
+#end-screen{text-align:left;}
+.end-line{
+  font-size:17px;line-height:2.15;color:#b8b4ae;
+  letter-spacing:1px;animation:fadein .9s ease;
+}
+.end-line.big{font-size:23px;color:#ddd9d2;letter-spacing:2px;}
+.restart{margin-top:44px;width:auto;display:inline-block;padding:14px 38px;}
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- 开始页 -->
+  <div id="start-screen" class="screen">
+    <div class="brand">PSYCHOLOGICAL ASSESSMENT · No.0417</div>
+    <h1>依恋类型深度测试</h1>
+    <p class="sub">共 20 题 · 约需 4 分钟</p>
+    <p class="desc">
+      本测试用于评估你在亲密关系中的依恋倾向。<br>
+      请凭第一直觉作答，没有对错。
+    </p>
+    <button id="start-btn">开 始 测 试</button>
+    <p class="tiny">建议在安静的环境中独自完成。</p>
+  </div>
+
+  <!-- 答题页 -->
+  <div id="quiz-screen" class="screen hidden">
+    <div class="topbar">
+      <div id="progress-wrap"><div id="progress-bar"></div></div>
+      <div id="counter">01 / 20</div>
+    </div>
+    <div id="question"></div>
+    <div id="options"></div>
+  </div>
+
+  <!-- 结局页 -->
+  <div id="end-screen" class="screen hidden"></div>
+
+</div>
+
+<div id="flood"></div>
+<div id="flash"></div>
+
+<script>
+/* =========================================================
+   音频引擎（Web Audio API，无需外部文件）
+   ========================================================= */
+let actx = null;
+
+function audioInit(){
+  if(!actx){
+    try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ actx = null; }
+  }
+  if(actx && actx.state === 'suspended') actx.resume();
+}
+
+function tone(freq, dur, type, vol, delay, freqEnd){
+  if(!actx) return;
+  const t0 = actx.currentTime + (delay || 0);
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  if(freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol || 0.1, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+
+function noise(dur, vol, filterType, freq){
+  if(!actx) return;
+  const n = Math.floor(actx.sampleRate * dur);
+  const buf = actx.createBuffer(1, n, actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  const f = actx.createBiquadFilter();
+  f.type = filterType || 'bandpass';
+  f.frequency.value = freq || 1200;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(vol || 0.2, actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+  src.connect(f); f.connect(g); g.connect(actx.destination);
+  src.start();
+}
+
+/* 心跳 */
+let hbTimer = null;
+function heartbeat(){
+  if(!actx || state.done) return;
+  const gap = Math.max(1500 - state.idx * 32, 820);
+  tone(54, 0.16, 'sine', 0.05);
+  setTimeout(()=> tone(50, 0.2, 'sine', 0.032), 175);
+  hbTimer = setTimeout(heartbeat, gap);
+}
+
+/* =========================================================
+   视觉特效
+   ========================================================= */
+const stage = document.getElementById('stage');
+const flashEl = document.getElementById('flash');
+const floodEl = document.getElementById('flood');
+
+function shakeStage(ms){
+  stage.classList.add('shake');
+  setTimeout(()=> stage.classList.remove('shake'), ms);
+}
+
+function flashColor(color, ms){
+  flashEl.style.background = color;
+  flashEl.style.opacity = 1;
+  setTimeout(()=>{ flashEl.style.opacity = 0; }, ms);
+}
+
+function redFlood(text, dur){
+  let s = '';
+  for(let i = 0; i < 260; i++) s += text + '　';
+  floodEl.textContent = s;
+  floodEl.style.opacity = 1;
+  clearTimeout(floodEl._t);
+  floodEl._t = setTimeout(()=>{ floodEl.style.opacity = 0; }, dur);
+}
+
+function ghostNote(text, dur){
+  const el = document.createElement('div');
+  el.className = 'ghost-note';
+  el.textContent = text;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=> el.classList.add('show'));
+  setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=> el.remove(), 900);
+  }, dur || 2600);
+}
+
+/* =========================================================
+   题目数据
+   ========================================================= */
+const Q = [
+  { q:"你通常几点睡觉？",
+    o:["十一点前","十二点左右","凌晨两三点","不知道，看心情"] },
+
+  { q:"有人连续三天给你发“早安”，你会？",
+    o:["回复他","当作没看见","觉得有点温暖","觉得有点窒息"] },
+
+  { q:"你最近一次听见有人对你说“晚安”，是什么时候？",
+    o:["今天","几天前","很久了","想不起来了"], fx:"red" },
+
+  { q:"你手机里，有没有一个不敢点开的对话框？",
+    o:["有","没有","有好几个","我不知道你在问什么"] },
+
+  { q:"独处的时候，你通常在做什么？",
+    o:["看手机","发呆","睡觉","哭"], fx:"scare" },
+
+  { q:"“被需要”和“被理解”，哪个更接近爱？",
+    o:["被需要","被理解","都不是","我不配谈这个"] },
+
+  { q:"如果有一个人，记下了你说过的每一句话——",
+    o:["会觉得感动","会觉得害怕","会问他是谁","……"], fx:"ghost" },
+
+  { q:"你有没有在深夜，感觉有人在看着你？",
+    o:["有过","没有","经常","现在就有"] },
+
+  { q:"你会反复点开同一个人的头像吗？",
+    o:["会","不会","偶尔","我没有这个人"], fx:"flood1" },
+
+  { q:"你房间的门，现在是关着的吗？",
+    o:["关着","开着","我没有房间","你为什么问这个"] },
+
+  { q:"有人问你“你在哪”，你的第一反应是——",
+    o:["如实回答","不想回答","关你什么事","心跳变快"], fx:"glitch" },
+
+  { q:"你会不会打了一大段话，然后全部删掉？",
+    o:["经常","有时候","不会","我只在心里说"] },
+
+  { q:"你觉得沉默是一种回答吗？",
+    o:["是","不是","是最狠的那种","我经常沉默"], fx:"whisper" },
+
+  { q:"如果有一个按钮，按下就能知道对方此刻在想什么——",
+    o:["我会按","我不会","我按过","没有这个人"] },
+
+  { q:"你有没有过这样的瞬间：在一群人的笑声里，你突然觉得很安静？",
+    o:["有过很多次","偶尔","没有","我从来都很安静"] },
+
+  { q:"你更喜欢被爱，还是被记住？",
+    o:["被爱","被记住","都不喜欢","我什么都留不住"], fx:"scream" },
+
+  { q:"如果有人为你放弃了一切，你会——",
+    o:["感动","愧疚","害怕","逃"], fx:"typing" },
+
+  { q:"你会为了一个人，改变自己的作息吗？",
+    o:["会","不会","已经改过了","改不回来了"] },
+
+  { q:"一个人可以同时“很爱你”和“很可怕”吗？",
+    o:["可以","不可以","你在说谁","……"], fx:"flood2" },
+
+  { q:"最后一题。你现在，是一个人吗？",
+    o:["是","不是","我不确定","你为什么这么问"] }
+];
+
+/* =========================================================
+   状态
+   ========================================================= */
+const state = { idx: 0, locked: false, done: false };
+
+const startScreen = document.getElementById('start-screen');
+const quizScreen  = document.getElementById('quiz-screen');
+const endScreen   = document.getElementById('end-screen');
+const questionEl  = document.getElementById('question');
+const optionsEl   = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const counterEl   = document.getElementById('counter');
+
+/* =========================================================
+   特效分发
+   ========================================================= */
+function runFx(name){
+  switch(name){
+
+    case 'red':
+      document.body.classList.add('red');
+      tone(180, 1.0, 'sine', 0.055);
+      setTimeout(()=> document.body.classList.remove('red'), 1300);
+      return 1600;
+
+    case 'scare':
+      noise(0.6, 0.35, 'bandpass', 900);
+      tone(90, 0.6, 'sawtooth', 0.12);
+      tone(97, 0.6, 'sawtooth', 0.12);
+      shakeStage(700);
+      flashColor('rgba(130,0,0,.85)', 190);
+      return 1500;
+
+    case 'ghost':
+      ghostNote("我记得你说过的每一句话。");
+      tone(300, 1.4, 'sine', 0.04);
+      return 2000;
+
+    case 'flood1':
+      redFlood("他在看着你", 420);
+      noise(0.35, 0.22, 'highpass', 2200);
+      shakeStage(400);
+      return 1400;
+
+    case 'glitch': {
+      shakeStage(520);
+      noise(0.22, 0.18, 'highpass', 3200);
+      const orig = progressBar.style.width;
+      let n = 0;
+      const iv = setInterval(()=>{
+        progressBar.style.width = (Math.random() * 100) + '%';
+        n++;
+        if(n > 13){ clearInterval(iv); progressBar.style.width = orig; }
+      }, 45);
+      ghostNote("你心跳变快了。我感觉得到。", 2200);
+      return 1500;
+    }
+
+    case 'whisper':
+      ghostNote("你不用回答。我早就知道了。", 2800);
+      tone(320, 1.6, 'sine', 0.04);
+      return 1900;
+
+    case 'scream':
+      noise(1.0, 0.4, 'highpass', 1500);
+      tone(1800, 0.8, 'sawtooth', 0.07, 0, 600);
+      tone(2400, 0.7, 'square', 0.05, 0.05, 900);
+      flashColor('rgba(255,255,255,.92)', 90);
+      setTimeout(()=> flashColor('rgba(180,0,0,.9)', 280), 100);
+      shakeStage(900);
+      return 1900;
+
+    case 'typing':
+      return fxTyping();
+
+    case 'flood2':
+      redFlood("我爱你我爱你我爱你", 1050);
+      noise(1.2, 0.3, 'lowpass', 520);
+      tone(68, 1.5, 'sawtooth', 0.1);
+      shakeStage(1200);
+      return 2700;
+  }
+  return 400;
+}
+
+function fxTyping(){
+  const qEl = document.getElementById('question');
+  const orig = Q[state.idx].q;
+  qEl.textContent = '';
+  let i = 0;
+  const iv = setInterval(()=>{
+    if(i <= orig.length){
+      qEl.textContent = orig.slice(0, i);
+      if(i % 2 === 0) tone(720 + Math.random() * 200, 0.03, 'square', 0.014);
+      i++;
+    } else {
+      clearInterval(iv);
+      qEl.textContent = orig;
+      qEl.style.color = '#c1121f';
+      setTimeout(()=>{
+        qEl.textContent = orig + "（回答我。）";
+        qEl.style.textShadow = '0 0 22px rgba(193,18,31,.65)';
+      }, 420);
+    }
+  }, 58);
+  return 2900;
+}
+
+/* =========================================================
+   渲染 / 流程
+   ========================================================= */
+function render(){
+  const item = Q[state.idx];
+
+  questionEl.style.color = '';
+  questionEl.style.textShadow = '';
+  questionEl.textContent = item.q;
+
+  progressBar.style.width = (state.idx / Q.length * 100) + '%';
+  counterEl.textContent = String(state.idx + 1).padStart(2, '0') + ' / ' + Q.length;
+
+  optionsEl.innerHTML = '';
+  item.o.forEach((opt, i)=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = opt;
+    b.addEventListener('click', ()=> choose(b));
+    optionsEl.appendChild(b);
+  });
+}
+
+function choose(btn){
+  if(state.locked) return;
+  state.locked = true;
+
+  btn.style.borderColor = '#7a7a80';
+  btn.style.color = '#e6e2dc';
+  tone(420, 0.07, 'sine', 0.03);
+
+  const item = Q[state.idx];
+  const delay = item.fx ? runFx(item.fx) : 420;
+
+  setTimeout(()=>{
+    state.idx++;
+    state.locked = false;
+    if(state.idx >= Q.length){
+      endSequence();
+    }else{
+      render();
+    }
+  }, delay);
+}
+
+/* =========================================================
+   结局
+   ========================================================= */
+const endLines = [
+  { t:"测试完成。", c:"" },
+  { t:"你的结果：", c:"" },
+  { t:"「一个永远在被爱着的人。」", c:"big" },
+  { t:"我记得你。", c:"" },
+  { t:"……", c:"" },
+  { t:"下次再聊。", c:"" }
+];
+
+function endSequence(){
+  state.done = true;
+  clearTimeout(hbTimer);
+
+  quizScreen.classList.add('hidden');
+  endScreen.classList.remove('hidden');
+  endScreen.innerHTML = '';
+
+  let i = 0;
+  function step(){
+    if(i >= endLines.length){
+      setTimeout(finalHorror, 900);
+      return;
+    }
+    const line = endLines[i];
+    const d = document.createElement('div');
+    d.className = 'end-line ' + line.c;
+    d.textContent = line.t || '\u00A0';
+    endScreen.appendChild(d);
+
+    if(line.t) tone(210 + Math.random() * 70, 0.26, 'sine', 0.024);
+
+    const wait = line.t ? 950 : 260;
+    i++;
+    setTimeout(step, wait);
+  }
+  step();
+}
+
+function finalHorror(){
+  redFlood("别走", 1250);
+  noise(1.2, 0.35, 'highpass', 1100);
+  tone(64, 2.2, 'sawtooth', 0.1);
+  shakeStage(1400);
+  document.body.classList.add('endmode');
+
+  setTimeout(()=>{ redFlood("我一直在", 700); }, 1700);
+
+  setTimeout(()=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt restart';
+    btn.textContent = '重新测试';
+    endScreen.appendChild(btn);
+
+    btn.addEventListener('mouseenter', ()=>{ btn.textContent = '你以为能重来？'; });
+    btn.addEventListener('mouseleave', ()=>{ btn.textContent = '重新测试'; });
+    btn.addEventListener('click', ()=> location.reload());
+  }, 2700);
+}
+
+/* =========================================================
+   启动
+   ========================================================= */
+document.getElementById('start-btn').addEventListener('click', ()=>{
+  audioInit();
+  startScreen.classList.add('hidden');
+  quizScreen.classList.remove('hidden');
+  render();
+  setTimeout(heartbeat, 600);
+});
+</script>
+</body>
+</html>
