@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>工位编号404</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    background: #f0f2f5;
+    color: #303133;
+    line-height: 1.8;
+  }
+  .game-container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 30px 20px;
+  }
+  .scene {
+    display: none;
+    background: #fff;
+    border-radius: 8px;
+    padding: 35px 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease;
+  }
+  .scene.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  h1 { font-size: 22px; margin-bottom: 20px; color: #1a1a1a; }
+  h2 { font-size: 18px; margin: 20px 0 12px; }
+  h3 { font-size: 16px; margin: 15px 0 8px; }
+  h4 { font-size: 15px; margin: 0 0 8px; }
+
+  .poster, .board {
+    background: #f7f8fa;
+    padding: 18px 20px;
+    border-left: 4px solid #1890ff;
+    margin-bottom: 16px;
+  }
+  .board.warn { border-left-color: #cf1322; }
+  .board.warn h4 { color: #cf1322; }
+  .cross { text-decoration: line-through; color: #bbb; }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .item-card {
+    background: #f5f7fa;
+    border: 1px solid #e4e7ed;
+    padding: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .item-card:hover {
+    background: #ecf5ff;
+    border-color: #409eff;
+    transform: translateY(-2px);
+  }
+
+  .modal-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .modal-mask.show { display: flex; }
+  .modal-box {
+    background: #fff;
+    width: 500px;
+    max-width: 90%;
+    padding: 30px;
+    border-radius: 8px;
+  }
+  .modal-close {
+    text-align: right;
+    color: #909399;
+    cursor: pointer;
+    margin-top: 15px;
+    font-size: 14px;
+  }
+
+  .lock-box {
+    margin-top: 25px;
+    padding: 20px;
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+    border-radius: 6px;
+  }
+  .lock-box.green {
+    background: #f6ffed;
+    border-color: #b7eb8f;
+  }
+  .lock-box.gray {
+    background: #f5f7fa;
+    border-color: #dcdfe6;
+  }
+  .lock-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 11px 14px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+  button {
+    padding: 11px 24px;
+    background: #1890ff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.2s;
+  }
+  button:hover { background: #40a9ff; }
+  button.warn { background: #faad14; }
+  button.warn:hover { background: #ffc53d; }
+  button.success { background: #52c41a; }
+  button.success:hover { background: #73d13d; }
+  button.danger { background: #cf1322; }
+  button.danger:hover { background: #f5222d; }
+  button.gray { background: #d9d9d9; color: #333; }
+  button.gray:hover { background: #bfbfbf; }
+  button:disabled {
+    background: #d9d9d9;
+    cursor: not-allowed;
+  }
+
+  .tip { color: #909399; font-size: 13px; margin-top: 8px; }
+  .status-ok { color: #52c41a; font-size: 14px; margin-top: 8px; }
+
+  .sys-window {
+    background: #fff;
+    border-radius: 6px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    border: 1px solid #d9d9d9;
+  }
+  .win-title {
+    background: #f0f2f5;
+    padding: 8px 15px;
+    border-bottom: 1px solid #d9d9d9;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .win-body { padding: 18px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #d9d9d9;
+    padding: 8px;
+    text-align: center;
+  }
+  th { background: #fafafa; }
+
+  .ending-dark {
+    background: #001529;
+    color: #e6f7ff;
+  }
+  .ending-dark h1 { color: #fff; }
+  .theme-note {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    color: #606266;
+    font-size: 14px;
+  }
+  .ending-dark .theme-note {
+    border-top-color: #003a8c;
+    color: #8c8c8c;
+  }
+
+  .choice-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 25px;
+  }
+  .choice-row button { flex: 1; padding: 16px; font-size: 15px; }
+
+  .progress-bar {
+    text-align: center;
+    color: #909399;
+    font-size: 13px;
+    margin-bottom: 15px;
+  }
+
+  #scene-computer { background: #001e3c; color: #e6f7ff; }
+  #scene-computer .sys-window { color: #333; }
+  #scene-computer h1 { color: #fff; }
+  #scene-computer .lock-box { color: #333; }
+
+  .usb-status {
+    padding: 10px 15px;
+    background: #fff1f0;
+    border: 1px solid #ffa39e;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #cf1322;
+  }
+  .usb-status.ready {
+    background: #f6ffed;
+    border-color: #b7eb8f;
+    color: #389e0d;
+  }
+</style>
+</head>
+<body>
+<div class="game-container">
+
+<!-- 场景1：前台大厅 -->
+<div class="scene active" id="scene-index">
+  <div class="progress-bar">第 1 / 6 幕 · 前台大厅</div>
+  <h1>公司前台 · 一楼大厅</h1>
+  <p>你第一天入职某互联网公司做行政助理，前台头也不抬地说：「四楼门禁密码自己看墙上，输对了上去，输错了锁五分钟。」</p>
+
+  <div class="poster">
+    <h4>企业文化海报</h4>
+    我们奉行「365天在岗，24小时响应」的奋斗者精神<br>
+    以拼搏为荣，以摸鱼为耻<br>
+    本月全勤奖发放标准：出勤满28天，日均工时不低于11小时
+  </div>
+
+  <div class="poster">
+    <h4>考勤管理制度（节选）</h4>
+    1. 工作时间：早9点至晚9点，午晚休息各1小时<br>
+    2. 月度有效工时不满280小时者，绩效自动降一档<br>
+    3. 门禁密码提示：全勤的底线（4位数字）
+  </div>
+
+  <div class="lock-box">
+    <h4>🔒 四楼门禁密码</h4>
+    <div class="lock-row">
+      <input type="text" id="pwd1" maxlength="4" placeholder="请输入4位数字密码">
+      <button onclick="checkGate()">验证门禁</button>
+    </div>
+    <div class="tip">提示：答案就在两张公告里，和「全勤硬性要求」直接相关</div>
+  </div>
+</div>
+
+<!-- 场景2：四楼走廊 -->
+<div class="scene" id="scene-floor4">
+  <div class="progress-bar">第 2 / 6 幕 · 四楼走廊</div>
+  <h1>四楼办公区走廊</h1>
+  <p>HR发来微信：「去清理张建国的工位，他昨天主动离职了。技术部都在401-410，他是后端组的。私藏的涉密文件找到直接删。」</p>
+
+  <div class="board warn">
+    <h4>【通报批评】9月绩效违纪公示</h4>
+    技术部员工张建国，本月累计违纪4次，给予绩效警告处分：<br>
+    1. 工作日凌晨2点未响应工作群消息<br>
+    2. 连续3天晚于22点下班前提交日报<br>
+    3. 周会未开摄像头，被算法判定为摸鱼<br>
+    4. 工位桌面杂物过多，影响5S评分<br>
+    <span class="cross">工位号：404</span> （被人用马克笔划掉了，只能看清百位是4，十位是0）
+  </div>
+
+  <div class="board">
+    <h4>【部门工位分布说明】</h4>
+    401-410为技术部工位：<br>
+    - 奇数工位：前端组<br>
+    - 偶数工位：后端组<br>
+    - 组长工位为后端组违纪次数最多的工位号
+  </div>
+
+  <div class="board">
+    <h4>【地上捡到的半张工牌】</h4>
+    姓名：张建国<br>
+    部门：技术部 · 后端组<br>
+    职级：P7 · 组长
+  </div>
+
+  <div class="lock-box">
+    <h4>🔍 寻找目标工位</h4>
+    <div class="lock-row">
+      <input type="text" id="seatNum" maxlength="3" placeholder="请输入3位工位编号">
+      <button onclick="goSeat()">前往工位</button>
+    </div>
+    <div class="tip">提示：结合三张公告的信息，确定他的工位号</div>
+  </div>
+</div>
+
+<!-- 场景3：404工位 -->
+<div class="scene" id="scene-workstation">
+  <div class="progress-bar">第 3 / 6 幕 · 404号工位</div>
+  <h1>工位 · 404号</h1>
+  <p>工位上还留着半杯凉透的枸杞水，椅背上搭着一件格子衬衫，像主人突然离开再也没回来。点击物品查看细节，收集线索解开电脑和抽屉。</p>
+
+  <div class="items-grid">
+    <div class="item-card" onclick="showModal('calendar')">
+      <h4>📅 台历</h4>
+      2024年10月，画满了红圈
+    </div>
+    <div class="item-card" onclick="showModal('diary')">
+      <h4>📓 工作日志</h4>
+      封皮磨得起毛了
+    </div>
+    <div class="item-card" onclick="showModal('idcard')">
+      <h4>🪪 工牌</h4>
+      压在键盘下面
+    </div>
+    <div class="item-card" onclick="showModal('medicine')">
+      <h4>💊 药盒</h4>
+      降压药，还剩半盒
+    </div>
+  </div>
+
+  <div class="lock-box">
+    <h4>🔒 电脑开机密码（6位）</h4>
+    <p style="font-size:14px;">提示：他最牵挂的日子（年月日）</p>
+    <div class="lock-row">
+      <input type="text" id="pcPwd" maxlength="6" placeholder="输入6位密码">
+      <button class="warn" onclick="openPc()">开机</button>
+    </div>
+  </div>
+
+  <div class="lock-box" style="margin-top:15px;">
+    <h4>🔒 抽屉密码锁（4位）</h4>
+    <p style="font-size:14px;">提示：入职月份 + 工龄年数</p>
+    <div class="lock-row">
+      <input type="text" id="drawerPwd" maxlength="4" placeholder="输入4位密码">
+      <button class="warn" onclick="openDrawer()">开抽屉</button>
+    </div>
+    <div class="tip" id="drawerTip" style="display:none;">
+      ✅ 抽屉已打开。里面有一个加密U盘、一沓工资条和医院缴费单。<br>
+      U盘密码提示：每月发薪日 + 每月房贷还款日（4位数字）。<br>
+      <span style="color:#909399;">（这两个日期分别记在工资条和台历上）</span>
+    </div>
+  </div>
+</div>
+
+<!-- 场景4：电脑系统 -->
+<div class="scene" id="scene-computer">
+  <div class="progress-bar">第 4 / 6 幕 · 电脑系统</div>
+  <h1>张建国的电脑桌面</h1>
+
+  <div class="usb-status" id="usbStatus">
+    ⚠️ 检测到加密U盘未接入，核心证据文件处于锁定状态
+  </div>
+
+  <div class="sys-window">
+    <div class="win-title">绩效系统 - 2024年9月个人绩效</div>
+    <div class="win-body">
+      <p><b>算法评分规则：</b>综合得分 = 需求完成量×0.6 + 工时饱和度×0.3 + 响应速度×0.1</p>
+      <table>
+        <tr><th>员工</th><th>需求完成量</th><th>工时饱和度</th><th>响应速度</th><th>系统最终得分</th></tr>
+        <tr><td>张建国</td><td>92</td><td>85</td><td>70</td><td style="color:red;font-weight:bold;">57</td></tr>
+        <tr><td>李明（26岁）</td><td>80</td><td>95</td><td>90</td><td style="color:green;font-weight:bold;">91.5</td></tr>
+      </table>
+      <p style="font-size:13px; color:#999;">* 系统备注：35周岁以上员工，评分结果统一执行年龄系数修正。</p>
+      <p style="font-size:13px; color:#999;">* 修正系数藏在「员工手册第7章第3条」，你可以在聊天记录里找到。</p>
+    </div>
+  </div>
+
+  <div class="sys-window">
+    <div class="win-title">企业微信聊天记录 - 主管与HR私聊</div>
+    <div class="win-body">
+      <p><b>主管：</b>张建国这个月得分怎么压下去？他活干得其实不少。</p>
+      <p><b>HR：</b>怕什么，算法背锅。员工手册7章3条写了，35+统一乘0.65系数，就说是系统规则，我们也没办法。</p>
+      <p><b>主管：</b>他要是闹怎么办？</p>
+      <p><b>HR：</b>闹就给他算旷工，手里房贷压着，他不敢仲裁。熬到他自己提离职，省十几万赔偿。</p>
+      <p><b>主管：</b>行，下个月再给他加20%需求，看他熬不熬得住。</p>
+    </div>
+  </div>
+
+  <div class="lock-box gray">
+    <h4>💾 解密U盘（4位密码）</h4>
+    <p style="font-size:14px;">提示：发薪日 + 房贷还款日</p>
+    <div class="lock-row">
+      <input type="text" id="usbPwd" maxlength="4" placeholder="输入4位密码">
+      <button class="gray" onclick="unlockUsb()">解密U盘</button>
+    </div>
+    <div class="tip">解开U盘后才能解锁「证据」文件夹与录音文件</div>
+  </div>
+
+  <div class="lock-box green">
+    <h4>📁 加密文件夹：「证据」</h4>
+    <p style="font-size:14px;">4位密码提示：<b>真实绩效得分（取整数） + 系统显示得分</b></p>
+    <div class="lock-row">
+      <input type="text" id="folderPwd" maxlength="4" placeholder="输入4位密码" disabled>
+      <button class="success" id="folderBtn" onclick="openFolder()" disabled>解锁文件夹</button>
+    </div>
+    <div class="tip">需先插入并解密U盘</div>
+  </div>
+</div>
+
+<!-- 场景5：证据整理 -->
+<div class="scene" id="scene-evidence">
+  <div class="progress-bar">第 5 / 6 幕 · 证据整理</div>
+  <h1>证据文件夹内容</h1>
+  <p>文件夹里是张建国偷偷收集的材料，加上U盘中的加班明细，已经形成了完整的证据链。最关键的，是那段加密的谈话录音。</p>
+
+  <div class="board warn">
+    <h4>文件1：公司《人员优化实施方案（内部）》</h4>
+    核心目标：3年内将35岁以上员工占比降至10%以下<br>
+    执行手段：绩效系数下调、工作量加码、调岗降薪、取消晋升资格，引导主动离职，降低裁员成本。
+  </div>
+
+  <div class="board">
+    <h4>文件2：U盘中导出 · 近一年加班统计</h4>
+    工作日延时加班：986小时（按1.5倍工资计算）<br>
+    休息日加班：260小时（按2倍工资计算）<br>
+    法定节假日加班：40小时（按3倍工资计算）<br>
+    合计未支付加班费：约18.7万元
+    <p style="font-size:13px; color:#909399; margin-top:8px;">
+      法律依据：《劳动法》第四十四条 —— 工作日加班1.5倍、休息日加班2倍、法定节假日3倍工资报酬
+    </p>
+  </div>
+
+  <div class="board">
+    <h4>文件3：工资条（9月）</h4>
+    基础工资：15000元 &nbsp;&nbsp; 绩效扣除：4200元<br>
+    实发：9876元 &nbsp;&nbsp; 发薪日：每月15日<br>
+    备注：绩效不达标，按系数0.6发放
+  </div>
+
+  <div class="board">
+    <h4>法律提示（你手机搜索的结果）</h4>
+    违法解除劳动合同赔偿金 = 经济补偿标准 × 2（即2N）<br>
+    经济补偿N = 劳动者在本单位工作年限 × 月平均工资<br>
+    工作每满1年支付1个月工资，6个月以上按1年算。
+  </div>
+
+  <div class="lock-box green">
+    <h4>🎙️ 加密录音文件：HR谈话录音.wav</h4>
+    <p style="font-size:14px;">6位密码提示：张建国法定应得的违法解除赔偿金总额（元）的后六位</p>
+    <div class="lock-row">
+      <input type="text" id="audioPwd" maxlength="6" placeholder="输入6位数字密码">
+      <button class="success" onclick="playAudio()">解密播放</button>
+    </div>
+  </div>
+
+  <div class="choice-row" id="choiceBox" style="display:none;">
+    <button class="gray" onclick="goEnding('silent')">交给HR销毁证据，保住自己的工作</button>
+    <button class="danger" onclick="goEnding('expose')">匿名举报+发全员邮箱，曝光真相</button>
+  </div>
+</div>
+
+<!-- 场景6A：沉默结局 -->
+<div class="scene ending-dark" id="scene-ending-silent">
+  <div class="progress-bar">结局 · 沉默的大多数</div>
+  <h1>结局 · 沉默的大多数</h1>
+  <div style="margin-top:20px; font-size:16px;">
+    你把证据交给了HR。她笑着拍了拍你的肩膀，说你「懂事，有前途」。<br><br>
+    一个月后，四楼的绩效公示栏上，又多了三个35+的名字，标注着「末位淘汰」。<br>
+    404工位很快坐了新的毕业生，年轻，便宜，愿意通宵。<br><br>
+    你坐在自己的工位上，看着电脑右下角的工号信息：入职年份2024，今年22岁。<br>
+    还有十三年，你也35岁了。<br><br>
+    工位编号不会永远是404，但404的故事，永远有人正在经历。
+  </div>
+  <div class="theme-note">
+    批判内核：个体的沉默与妥协，只会让压榨的底线不断下移。没有人是永远的「安全者」，今天的旁观者，可能就是明天的受害者。
+  </div>
+  <div style="margin-top:25px; text-align:center;">
+    <button onclick="restart()">重新开始</button>
+  </div>
+</div>
+
+<!-- 场景6B：曝光结局 -->
+<div class="scene" id="scene-ending-expose">
+  <div class="progress-bar">结局 · 微弱的光</div>
+  <h1>结局 · 微弱的光</h1>
+  <div style="margin-top:20px; font-size:16px;">
+    你把所有证据匿名发给了劳动监察部门，同时抄送到了公司全员邮箱。<br><br>
+    一周后，公司被立案调查。加班制度被要求整改，张建国拿到了他应得的赔偿金与拖欠的加班费。<br>
+    没过多久，HR找了个「试用期不合格」的理由把你辞退了。<br><br>
+    离开公司那天，你路过四楼走廊，看到几个老员工偷偷在讨论那份流出的文件。<br>
+    有人小声说：「原来不是我们不够努力，是他们故意的。」<br><br>
+    你走出大楼，阳光有点刺眼。你知道自己改变不了整个行业，但至少，<br>
+    有一些人，从此知道了自己本该拥有的权利。
+  </div>
+  <div class="theme-note">
+    教育意义：劳动者的权益从来不是等来的，而是靠每一个人的觉醒与争取。了解法律、敢于发声，哪怕只是微弱的光，也能照亮一点真实的边界。
+  </div>
+  <div style="margin-top:25px; text-align:center;">
+    <button onclick="restart()">重新开始</button>
+  </div>
+</div>
+
+<!-- 物品详情弹窗 -->
+<div class="modal-mask" id="modal-calendar">
+  <div class="modal-box">
+    <h3>台历细节</h3>
+    10月的日历上，几乎每个工作日都画了红勾，标注着「加班」。<br>
+    10月15日被红笔重重圈了起来，旁边写着：<b>女儿10岁生日</b>。<br>
+    每月28号都画了蓝色小三角，标注：<b>房贷还款</b>。<br>
+    页脚小字：「又要爽约了，项目赶上线。」
+    <div class="modal-close" onclick="closeModal('calendar')">关闭</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modal-diary">
+  <div class="modal-box">
+    <h3>工作日志节选</h3>
+    9月1日：KPI又涨了20%，算法说人效还有提升空间。<br>
+    9月15日：女儿家长会又没去成，连续三周单休了。<br>
+    10月8日：HR找谈话，说我「性价比不高」，建议主动离职，N+1想都别想。<br>
+    10月12日：系统算我绩效57分，可是我交付的需求比新人还多。<br>
+    最后一页潦草写着：<br>
+    电脑密码是女儿生日，抽屉密码是入职月份加工龄。<br>
+    U盘里存了这一年的加班记录，真要闹到仲裁，这些都是证据。
+    <div class="modal-close" onclick="closeModal('diary')">关闭</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modal-idcard">
+  <div class="modal-box">
+    <h3>工牌信息</h3>
+    姓名：张建国<br>
+    工号：T20150312<br>
+    部门：技术部 后端组<br>
+    入职日期：2015年03月12日
+    <div class="modal-close" onclick="closeModal('idcard')">关闭</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modal-medicine">
+  <div class="modal-box">
+    <h3>药盒说明</h3>
+    苯磺酸氨氯地平片（高血压药）<br>
+    每日2次，早晚各1粒<br>
+    医嘱：避免熬夜、过度劳累、情绪激动
+    <div class="modal-close" onclick="closeModal('medicine')">关闭</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let usbUnlocked = false;
+let drawerOpened = false;
+
+function goScene(id) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById('scene-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showModal(id) {
+  document.getElementById('modal-' + id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById('modal-' + id).classList.remove('show');
+}
+
+// 第一关：门禁密码
+function checkGate() {
+  const val = document.getElementById('pwd1').value.trim();
+  if (val === '1128') {
+    goScene('floor4');
+  } else {
+    alert('密码错误，门禁已发出警告。再想想全勤的硬性要求。');
+  }
+}
+document.getElementById('pwd1').addEventListener('keydown', e => {
+  if(e.key === 'Enter') checkGate();
+});
+
+// 第二关：工位号
+function goSeat() {
+  const val = document.getElementById('seatNum').value.trim();
+  if (val === '404') {
+    goScene('workstation');
+  } else {
+    alert('你找错了工位，这是其他员工的位置。再核对一下部门和违纪信息。');
+  }
+}
+document.getElementById('seatNum').addEventListener('keydown', e => {
+  if(e.key === 'Enter') goSeat();
+});
+
+// 第三关：电脑密码
+function openPc() {
+  const val = document.getElementById('pcPwd').value.trim();
+  if (val === '141015') {
+    goScene('computer');
+  } else {
+    alert('密码错误。想想他最牵挂的人是谁，生日是哪一天。');
+  }
+}
+document.getElementById('pcPwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') openPc();
+});
+
+// 第三关：抽屉密码
+function openDrawer() {
+  const val = document.getElementById('drawerPwd').value.trim();
+  if (val === '0309') {
+    if (!drawerOpened) {
+      drawerOpened = true;
+      document.getElementById('drawerTip').style.display = 'block';
+    }
+    alert('抽屉打开了。里面有一个加密U盘、一沓工资条和医院缴费单。\nU盘密码提示：每月发薪日 + 每月房贷还款日（4位数字）。\n（这两个日期分别记在工资条和台历上）');
+  } else {
+    alert('密码不对。入职月份和工龄，都是两位数字，不足补0。');
+  }
+}
+document.getElementById('drawerPwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') openDrawer();
+});
+
+// 第四关：解密U盘
+function unlockUsb() {
+  const val = document.getElementById('usbPwd').value.trim();
+  if (val === '1528') {
+    usbUnlocked = true;
+    document.getElementById('usbStatus').textContent = '✅ U盘已解密并挂载，核心证据文件已可访问';
+    document.getElementById('usbStatus').classList.add('ready');
+    document.getElementById('folderPwd').disabled = false;
+    document.getElementById('folderBtn').disabled = false;
+    alert('U盘解密成功。\n\n里面是张建国整整一年的加班打卡记录、工资条截图和维权笔记。\n他早就预料到会有这一天，偷偷把所有证据都备份在了这里。\n\n现在可以解锁「证据」文件夹了。');
+  } else {
+    alert('U盘密码错误。想想发薪日和房贷还款日分别是几号，都是两位数字，拼在一起。');
+  }
+}
+document.getElementById('usbPwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') unlockUsb();
+});
+
+// 第四关：文件夹密码
+function openFolder() {
+  if (!usbUnlocked) {
+    alert('请先解密U盘。');
+    return;
+  }
+  const val = document.getElementById('folderPwd').value.trim();
+  if (val === '8857') {
+    goScene('evidence');
+  } else {
+    alert('密码错误。先算原始分，取整数部分，再拼接上系统显示的57分。');
+  }
+}
+document.getElementById('folderPwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') openFolder();
+});
+
+// 第五关：录音密码
+function playAudio() {
+  const val = document.getElementById('audioPwd').value.trim();
+  if (val === '270000') {
+    alert('【录音播放】\n\nHR：「熬不动就自己走，公司没逼你。」\n主管：「他真去仲裁怎么办？」\nHR：「怕什么，他耗得起吗？房贷、孩子学费，哪样不等钱？拖两个月他就怂了。」\n\n录音播放完毕。\n\n加上U盘里的加班明细和绩效造假证据，这已经是完整的证据链。\n现在你要做出选择。');
+    document.getElementById('choiceBox').style.display = 'flex';
+  } else {
+    alert('密码错误。先算2N是多少个月工资，再乘以月薪，取后六位。');
+  }
+}
+document.getElementById('audioPwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') playAudio();
+});
+
+// 进入结局
+function goEnding(type) {
+  goScene('ending-' + type);
+}
+
+// 重新开始
+function restart() {
+  document.querySelectorAll('input').forEach(i => i.value = '');
+  drawerOpened = false;
+  usbUnlocked = false;
+  document.getElementById('drawerTip').style.display = 'none';
+  document.getElementById('choiceBox').style.display = 'none';
+  document.getElementById('usbStatus').classList.remove('ready');
+  document.getElementById('usbStatus').textContent = '⚠️ 检测到加密U盘未接入，核心证据文件处于锁定状态';
+  document.getElementById('folderPwd').disabled = true;
+  document.getElementById('folderBtn').disabled = true;
+  goScene('index');
+}
+
+document.querySelectorAll('.modal-mask').forEach(mask => {
+  mask.addEventListener('click', e => {
+    if (e.target === mask) mask.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
